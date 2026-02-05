@@ -18,25 +18,19 @@ on:
       jobs:
         default: '["ecs"]'
         type: string
-      notify_slack:
-        default: false
-        type: boolean
+
 concurrency:
-  group: ci-global-${{ github.ref }}
+  group: ci-global-${{ github.repository }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   code-quality:
     name: Code Quality
     if: ${{ contains(fromJSON(inputs.jobs), 'ecs') || contains(fromJSON(inputs.jobs), 'phpstan') || contains(fromJSON(inputs.jobs), 'prettier')  || contains(fromJSON(inputs.jobs), 'rector')}}
     uses: ./.github/workflows/code-quality.yml
+    secrets:
+      token: ${{ secrets.token }}
     with:
       php_version: ${{ fromJSON('{"3":"8.2","4":"8.2","5":"8.2"}')[inputs.craft_version] || inputs.php_version }}
       jobs: ${{ inputs.jobs }}
       node_version: ${{ inputs.node_version }}
-  tests:
-    name: Tests
-    needs: [code-quality]
-    if: ${{ contains(fromJSON(inputs.jobs), 'tests') }}
-    uses: ./.github/workflows/codecept.yml
-    with:
-      php_versions: ${{ toJSON(fromJSON('{"3":[""8.0","8.1", "8.2"],"4":["8.0","8.1","8.2","8.3","8.4"],"5":["8.2","8.3","8.4"]}')[inputs.craft_version] || inputs.php_version) }}

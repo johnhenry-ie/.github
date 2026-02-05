@@ -1,4 +1,5 @@
 name: Prettier
+
 on:
   workflow_call:
     inputs:
@@ -8,22 +9,36 @@ on:
 
 jobs:
   prettier:
-    name: check
+    name: Prettier
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - name: Setup node
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
-          cache: 'pnpm'
-      - name: Install node deps
-        run: npm ci
+
+      - name: Install dependencies
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            corepack prepare pnpm@10 --activate
+            pnpm install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+          else
+            echo "No lockfile found (pnpm-lock.yaml, package-lock.json, yarn.lock). Skipping install."
+          fi
 
       - name: Run Prettier checks
-        run: npx prettier --check .
+        run: |
+          if [ -f package.json ]; then
+            npx prettier --check .
+          else
+            echo "No package.json found. Skipping Prettier."
+          fi

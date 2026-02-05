@@ -6,28 +6,47 @@ on:
       php_version:
         required: true
         type: string
+    secrets:
+      token:
+        required: false
 
 jobs:
   ecs:
     name: ECS
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup PHP
         id: setup-php
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ inputs.php_version }}
-          extensions: 'ctype,curl,dom,iconv,imagick,intl,json,mbstring,openssl,pcre,pdo,reflection,spl,zip'
+          extensions: ctype,curl,dom,iconv,imagick,intl,json,mbstring,openssl,pcre,pdo,reflection,spl,zip
           ini-values: post_max_size=256M, max_execution_time=180, memory_limit=512M
           tools: composer:v2
         env:
-          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMPOSER_TOKEN: ${{ secrets.token }}
 
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Composer cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: ${{ runner.os }}-php-${{ inputs.php_version }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ inputs.php_version }}-composer-
 
       - name: Install Composer dependencies
-        run: composer install --no-interaction --no-ansi --no-progress
+        run: composer install --no-interaction --no-ansi --no-progress --prefer-dist
 
       - name: Run ECS checks
-        run: vendor/bin/ecs check --ansi
+        run: |
+          if [ -f vendor/bin/ecs ]; then
+            vendor/bin/ecs check --ansi
+          else
+            echo "ECS not installed (vendor/bin/ecs missing). Add symplify/easy-coding-standard to require-dev."
+            exit 1
+          fi

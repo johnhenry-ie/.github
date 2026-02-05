@@ -5,38 +5,47 @@ on:
       php_version:
         required: true
         type: string
+      secrets:
+        token:
+          required: false
+
 jobs:
   phpstan:
     name: PHPStan
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup PHP
         id: setup-php
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ inputs.php_version }}
-          extensions: 'ctype,curl,dom,iconv,imagick,intl,json,mbstring,openssl,pcre,pdo,reflection,spl,zip'
+          extensions: ctype,curl,dom,iconv,imagick,intl,json,mbstring,openssl,pcre,pdo,reflection,spl,zip
           ini-values: post_max_size=256M, max_execution_time=180, memory_limit=512M
           tools: composer:v2
         env:
-          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --no-ansi --no-progress
-      - name: Check .env.example.mysql exists
-        id: check_files
-        uses: andstor/file-existence-action@v1
+          COMPOSER_TOKEN: ${{ secrets.token }}
+
+      - name: Composer cache
+        uses: actions/cache@v4
         with:
-          files: "tests/.env.example.mysql"
-      - name: Copy tests .env
-        if: ${{ steps.check_files.outputs.files_exists == 'true' }}
-        run: cp ./tests/.env.example.mysql ./tests/.env
-      - name: Create folders
-        if: ${{ steps.check_files.outputs.files_exists == 'true' }}
-        run: mkdir tests/_craft/storage/runtime/compiled_classes
-      - name: Build Codeception support files
-        if: ${{ steps.check_files.outputs.files_exists == 'true' }}
-        run: "vendor/bin/codecept build"
+          path: |
+            ~/.composer/cache
+            vendor
+          key: ${{ runner.os }}-php-${{ inputs.php_version }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ inputs.php_version }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-ansi --no-progress --prefer-dist
+
       - name: Run PHPStan checks
-        run: "vendor/bin/phpstan --memory-limit=2G"
+        run: |
+          if [ -f vendor/bin/phpstan ]; then
+            vendor/bin/phpstan analyse --memory-limit=2G
+          else
+            echo "PHPStan not installed (vendor/bin/phpstan missing)."
+            exit 1
+          fi
