@@ -5,9 +5,9 @@ on:
       php_version:
         required: true
         type: string
-      secrets:
-        token:
-          required: false
+    secrets:
+      token:
+        required: false
 
 jobs:
   phpstan:
