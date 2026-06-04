@@ -12,6 +12,10 @@ on:
       jobs:
         default: '["ecs"]'
         type: string
+      src_path:
+        required: false
+        type: string
+        default: 'src'
     secrets:
       token:
         required: false
@@ -24,6 +28,7 @@ jobs:
       token: ${{ secrets.token }}
     with:
       php_version: ${{ inputs.php_version }}
+      src_path: ${{ inputs.src_path }}
 
   phpstan:
     name: PHPStan
@@ -33,6 +38,7 @@ jobs:
       token: ${{ secrets.token }}
     with:
       php_version: ${{ inputs.php_version }}
+      src_path: ${{ inputs.src_path }}
 
   prettier:
     name: Prettier

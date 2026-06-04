@@ -10,6 +10,9 @@ on:
       token:
         required: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   rector:
     name: Rector

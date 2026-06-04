@@ -6,9 +6,16 @@ on:
       php_version:
         required: true
         type: string
+      src_path:
+        required: false
+        type: string
+        default: 'src'
     secrets:
       token:
         required: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   ecs:
@@ -45,7 +52,7 @@ jobs:
       - name: Run ECS checks
         run: |
           if [ -f vendor/bin/ecs ]; then
-            vendor/bin/ecs check --ansi
+            vendor/bin/ecs check ${{ inputs.src_path }} --ansi
           else
             echo "ECS not installed (vendor/bin/ecs missing). Add symplify/easy-coding-standard to require-dev."
             exit 1
