@@ -7,7 +7,7 @@ on:
         default: '8.2'
         type: string
       node_version:
-        default: '20'
+        default: '24'
         type: string
       jobs:
         default: '["ecs"]'
@@ -46,6 +46,14 @@ jobs:
     uses: ./.github/workflows/prettier.yml
     with:
       node_version: ${{ inputs.node_version }}
+
+  eslint:
+    name: ESLint
+    if: ${{ contains(fromJSON(inputs.jobs), 'eslint') }}
+    uses: ./.github/workflows/eslint.yml
+    with:
+      node_version: ${{ inputs.node_version }}
+      src_path: ${{ inputs.src_path }}
 
   rector:
     name: Rector
